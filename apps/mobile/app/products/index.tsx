@@ -1,0 +1,30 @@
+import { CameraView, useCameraPermissions, type BarcodeScanningResult } from 'expo-camera';
+import { useRouter } from 'expo-router';
+import { useEffect, useState } from 'react';
+import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { findProductByCode, getLocalCatalogContext, listCategories, listProducts, type ProductRow } from '../../src/db/productRepository';
+
+export default function ProductsScreen(){
+ const router=useRouter();const [query,setQuery]=useState('');const [rows,setRows]=useState<ProductRow[]>([]);const [categories,setCategories]=useState<{id:string;name:string}[]>([]);const [category,setCategory]=useState('');const [showArchived,setShowArchived]=useState(false);const [context,setContext]=useState<Awaited<ReturnType<typeof getLocalCatalogContext>>>(null);const [scan,setScan]=useState(false);const [permission,requestPermission]=useCameraPermissions();const [error,setError]=useState('');const [offset,setOffset]=useState(0);const [lookup,setLookup]=useState('');
+ async function refresh(nextOffset=0){const active=context??await getLocalCatalogContext();setContext(active);if(!active){setRows([]);return;}if(!categories.length)setCategories(await listCategories(active));const data=await listProducts(active,query,40,nextOffset,{categoryId:category||undefined,includeArchived:showArchived,archivedOnly:showArchived});setRows(nextOffset?existing=>[...existing,...data]:data);setOffset(nextOffset);}
+ useEffect(()=>{void refresh().catch(()=>setError('تعذّر تحميل المنتجات من الجهاز.'));},[query,category,showArchived]);
+ async function scanned(result:BarcodeScanningResult){setScan(false);setLookup(result.data);if(!context)return;try{const product=await findProductByCode(context,result.data);if(product)router.push(`/products/${product.id}`);else setError('لم يتم العثور على منتج بهذا الباركود.');}catch{setError('تعذّر البحث عن المنتج.');}}
+ async function manualLookup(){if(!context){setError('سجّل الدخول أولاً لتحميل المؤسسة المصرح بها.');return;}const product=await findProductByCode(context,lookup.trim());if(product)router.push(`/products/${product.id}`);else setError('لا يوجد منتج مطابق للباركود أو الرمز.');}
+ return <ScrollView style={{flex:1,backgroundColor:'#F6F3ED'}} contentContainerStyle={{padding:20,gap:12}}>
+  <Text style={{fontSize:26,fontWeight:'700',textAlign:'right'}}>دليل المنتجات</Text><Text style={{textAlign:'right',color:'#725D3E'}}>قراءة محلية · قد تكون البيانات قديمة حتى تكتمل المزامنة</Text>
+  <TextInput value={query} onChangeText={setQuery} placeholder="بحث بالاسم أو الرمز أو الباركود" textAlign="right" style={{backgroundColor:'white',padding:14,borderRadius:12}}/>
+  <View style={{flexDirection:'row',gap:8}}><TextInput value={lookup} onChangeText={setLookup} placeholder="إدخال باركود يدوي" textAlign="right" style={{flex:1,backgroundColor:'white',padding:12,borderRadius:10}}/><Pressable onPress={()=>void manualLookup()} style={button}><Text style={buttonText}>بحث</Text></Pressable></View>
+  <Pressable onPress={async()=>{if(!permission?.granted){const result=await requestPermission();if(!result.granted){setError('الكاميرا غير متاحة. استخدم إدخال الباركود اليدوي.');return;}}setScan(true);}} style={button}><Text style={buttonText}>مسح بالكاميرا</Text></Pressable>
+  <Pressable onPress={()=>router.push('/products/new')} style={button}><Text style={buttonText}>＋ إضافة منتج</Text></Pressable>
+  <Pressable onPress={()=>router.push('/categories')} style={secondary}><Text style={{textAlign:'center'}}>إدارة الفئات</Text></Pressable>
+  <Pressable onPress={()=>router.push('/units')} style={secondary}><Text style={{textAlign:'center'}}>وحدات القياس</Text></Pressable>
+  <View style={{flexDirection:'row',flexWrap:'wrap',gap:8}}><Pressable onPress={()=>setCategory('')} style={[secondary,!category&&{backgroundColor:'#D6EAE4'}]}><Text>كل الفئات</Text></Pressable>{categories.map(c=><Pressable key={c.id} onPress={()=>setCategory(c.id)} style={[secondary,category===c.id&&{backgroundColor:'#D6EAE4'}]}><Text>{c.name}</Text></Pressable>)}</View>
+  <Pressable onPress={()=>setShowArchived(!showArchived)} style={secondary}><Text style={{textAlign:'center'}}>{showArchived?'عرض النشطة':'عرض المؤرشفة'}</Text></Pressable>
+  {error?<Text style={{color:'#A32626',textAlign:'right'}}>{error}</Text>:null}
+  {!context?<Text style={{textAlign:'right',padding:16,backgroundColor:'white',borderRadius:10}}>لا توجد مؤسسة أو عضوية مصرح بها مخزنة على هذا الجهاز. سجّل الدخول لتحميل الكتالوج.</Text>:rows.length===0?<Text style={{textAlign:'right',padding:16,backgroundColor:'white',borderRadius:10}}>لا توجد منتجات مطابقة. يمكنك إضافة منتج جديد.</Text>:rows.map(product=><Pressable key={product.id} onPress={()=>router.push(`/products/${product.id}`)} style={{backgroundColor:'white',padding:16,borderRadius:12,gap:5}}><Text style={{fontWeight:'700',textAlign:'right',fontSize:18}}>{product.name}</Text><Text style={{textAlign:'right'}}>{product.sku} · السعر {product.defaultSalesPrice}</Text><Text style={{textAlign:'right',color:'#725D3E'}}>{product.active?'نشط':'مؤرشف'} · حد التنبيه {product.minimumStock}</Text></Pressable>)}
+  {context&&rows.length===(offset+40)?<Pressable onPress={()=>void refresh(offset+40)} style={secondary}><Text style={{textAlign:'center'}}>تحميل المزيد</Text></Pressable>:null}
+  {scan?<View style={{height:400,borderRadius:16,overflow:'hidden'}}><CameraView style={{flex:1}} facing="back" barcodeScannerSettings={{barcodeTypes:['code39','ean13','ean8','qr']}} onBarcodeScanned={scanned}/><Pressable onPress={()=>setScan(false)} style={[button,{position:'absolute',bottom:12,left:12,right:12}]}><Text style={buttonText}>إغلاق الكاميرا</Text></Pressable></View>:null}
+  <Pressable onPress={()=>router.back()}><Text style={{textAlign:'center'}}>رجوع</Text></Pressable>
+ </ScrollView>;
+}
+const button={backgroundColor:'#176B5B',padding:14,borderRadius:10,alignItems:'center' as const};const buttonText={color:'white',fontWeight:'700' as const};const secondary={backgroundColor:'white',padding:13,borderRadius:10};

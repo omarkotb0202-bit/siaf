@@ -1,0 +1,54 @@
+openapi: 3.1.0
+info:
+  title: Safa Retail API
+  version: 0.1.0
+  description: Initial API contract. Protected command writes remain closed until token verification and membership authorization are configured.
+servers:
+  - url: http://localhost:3000/api/v1
+paths:
+  /health:
+    get:
+      operationId: healthCheck
+      responses:
+        '200':
+          description: API process is available; this does not indicate sync readiness.
+  /operations:
+    post:
+      operationId: submitOperation
+      security:
+        - bearerAuth: []
+      description: Reserved for idempotent sync commands. Currently fails closed with AUTH_NOT_CONFIGURED.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OperationCommand'
+      responses:
+        '202':
+          description: Operation accepted (not implemented yet).
+        '403':
+          description: Missing credentials or authorization not configured.
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    OperationCommand:
+      type: object
+      additionalProperties: false
+      required: [operationId, entityId, operationType, payload]
+      properties:
+        operationId: { type: string, format: uuid }
+        entityId: { type: string, format: uuid }
+        operationType: { type: string, minLength: 1 }
+        payload: { type: object }
+    Error:
+      type: object
+      required: [statusCode, code, message]
+      properties:
+        statusCode: { type: integer }
+        code: { type: string }
+        message: { type: string }

@@ -1,0 +1,11 @@
+node_modules/
+.expo/
+dist/
+coverage/
+.env
+.env.*
+!.env.example
+*.db
+*.sqlite
+__pycache__/
+*.py[cod]

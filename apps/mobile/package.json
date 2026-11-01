@@ -1,0 +1,46 @@
+{
+  "name": "@safa/mobile",
+  "version": "0.1.0",
+  "private": true,
+  "main": "expo-router/entry",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "test": "jest --runInBand"
+  },
+  "dependencies": {
+    "@safa/contracts": "0.1.0",
+    "expo": "~52.0.0",
+    "expo-camera": "~16.0.0",
+    "expo-crypto": "~14.0.2",
+    "expo-network": "~7.0.0",
+    "expo-print": "~14.0.0",
+    "expo-router": "~4.0.0",
+    "expo-sqlite": "~15.1.4",
+    "expo-status-bar": "~2.0.0",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "react-native": "0.76.9",
+    "react-native-barcode-builder": "^2.0.0",
+    "react-native-safe-area-context": "4.12.0",
+    "react-native-screens": "~4.4.0",
+    "react-native-svg": "15.8.0",
+    "react-native-web": "~0.19.13",
+    "sql.js": "^1.15.2"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.14",
+    "@types/react": "~18.3.12",
+    "@types/sql.js": "^1.4.11",
+    "eslint-config-expo": "~8.0.1",
+    "jest": "^29.7.0",
+    "jest-expo": "~52.0.0",
+    "typescript": "~5.3.3"
+  },
+  "jest": {
+    "preset": "jest-expo"
+  }
+}
