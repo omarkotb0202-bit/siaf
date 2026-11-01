@@ -9,3 +9,9 @@ coverage/
 *.sqlite
 __pycache__/
 *.py[cod]
+.DS_Store
+*.pem
+*.key
+*.p12
+*.mobileprovision
+.expo-shared/
